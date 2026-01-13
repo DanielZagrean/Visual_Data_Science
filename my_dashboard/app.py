@@ -7,7 +7,7 @@ from streamlit_plotly_events import plotly_events
 
 st.set_page_config(page_title="Fishing Fleet Dashboard", layout="wide")
 
-# ----------------------------
+# ---------------------------
 # Columns (EXACT from your file)
 # ----------------------------
 GEO  = "geo"
