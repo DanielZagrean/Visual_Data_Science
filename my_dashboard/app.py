@@ -50,64 +50,51 @@ def empty_fig(title: str, height: int = 360) -> go.Figure:
 # Computed INSIDE the function (no pct_change_gt_by_country)
 # ----------------------------
 def fig_top_left(df_in: pd.DataFrame, selected_country: str) -> go.Figure:
-    d = df_in[(df_in[UNIT] == "GT") & df_in[VAL].notna()].copy()
-    if d.empty:
-        return empty_fig("% change in GT by country (no data)", height=520)
+    pct_df = pd.DataFrame({
+        "country": ["SE","ES","MT","CY","PT","LT","DK","BE","EL","IT","NL","DE","FI","SI","LV","EE",
+                    "UK","BG","HR","FR","RO","IS","PL","IE","NO"],
+        "pct_change": [-60.302955,-57.052561,-56.732580,-56.459597,-53.158186,-50.557128,-49.238301,-47.396715,
+                       -46.912563,-46.637926,-40.314150,-39.799808,-38.688561,-36.547262,-36.342079,-31.152642,
+                       -28.964807,-27.528241,-23.106854,-19.525515,-15.641356,-12.776158,-2.602779,8.258183,23.193014]
+    })
 
-    # aggregate GT across gear + eng_pow for each geo/year
-    g = d.groupby([GEO, YEAR], as_index=False)[VAL].sum()
+    # Force correct types
+    pct_df["country"] = pct_df["country"].astype(str)
+    pct_df["pct_change"] = pd.to_numeric(pct_df["pct_change"], errors="raise").astype(float)
 
-    rows = []
-    for c in g[GEO].unique():
-        if c == "EU":
-            continue
-        gc = g[g[GEO] == c].sort_values(YEAR)
-        if len(gc) >= 6:
-            first_3 = gc[VAL].iloc[:3].mean()
-            last_3  = gc[VAL].iloc[-3:].mean()
-            if first_3 and first_3 != 0:
-                rows.append({"country": c, "pct_change": ((last_3 - first_3) / first_3) * 100})
+    # Lock order exactly as given (no sorting)
+    country_order = pct_df["country"].tolist()
 
-    pct_df = pd.DataFrame(rows)
-    if pct_df.empty:
-        return empty_fig("% change in GT by country (no data)", height=520)
 
-    # sort ascending like your screenshot (negative -> positive)
-    pct_df = pct_df.sort_values("pct_change", ascending=True).reset_index(drop=True)
 
-    colors = ["steelblue" if c == selected_country else "lightgray" for c in pct_df["country"]]
+    fig = go.Figure(go.Bar(
+        x=pct_df["country"].to_numpy(),
+        y=pct_df["pct_change"].to_numpy(),
+        marker_color="blue",
+        # This prevents “rank/index” from appearing in hover
+        hovertemplate="Country: %{x}<br>% change: %{y:.2f}<extra></extra>",
+        showlegend=False
+    ))
 
-    fig = go.Figure(
-        data=[go.Bar(
-            x=pct_df["country"],
-            y=pct_df["pct_change"],
-            marker=dict(color=colors),
-        )]
+    fig.add_hline(y=0, line_width=2)
+
+    fig.update_xaxes(
+        type="category",
+        categoryorder="array",
+        categoryarray=country_order,
+        tickangle=-45
     )
 
     fig.update_layout(
-        title="% change in GT by country — click a bar to select",
+        title="Percentual Change of Grosstonage by Country 1990 - 2024",
         xaxis_title="Country",
-        yaxis_title="% change (GT)",
-        xaxis_tickangle=-45,
+        yaxis_title="% change",
         hovermode="x",
-  #      height=200,
-   #     width = 350,
-        margin=dict(l=30, r=20, t=60, b=70),
+        margin=dict(l=40, r=20, t=60, b=70),
     )
-
-    fig.update_xaxes(
-        categoryorder="array",
-        categoryarray=pct_df["country"].tolist(),
-        showspikes=True,
-        spikemode="across",
-        spikesnap="cursor",
-        spikedash="dot",
-        spikethickness=2,
-    )
-    fig.update_yaxes(zeroline=True, zerolinewidth=1)
 
     return fig
+
 
 # ----------------------------
 # Other charts (NOT clickable)
@@ -125,8 +112,10 @@ def fig_top_right_nr_gt_timeseries(df_in: pd.DataFrame, country: str) -> go.Figu
     fig.add_trace(go.Scatter(x=gt[YEAR], y=gt[VAL], mode="lines+markers", name="GT (tonnage)"), secondary_y=True)
 
     fig.update_layout(
-        title=f"{country}: Total fleet over time (NR & GT)",
+        title=f"{country}: Total fleet over time (Number vs Gross Tonage)",
         hovermode="x unified",
+        xaxis_title="Year",
+
         margin=dict(l=50, r=20, t=55, b=45),
         height=300,
     )
@@ -142,7 +131,7 @@ def latest_year_for_country(df_in: pd.DataFrame, country: str) -> int | None:
 def fig_bottom_left_gt_by_gear_latest(df_in: pd.DataFrame, country: str) -> go.Figure:
     y = latest_year_for_country(df_in, country)
     if y is None:
-        return empty_fig(f"{country}: GT by gear (no data)")
+        return empty_fig(f"{country}: Gross Tonage by gear (no data)")
 
     d = df_in[
         (df_in[GEO] == country) &
@@ -155,10 +144,12 @@ def fig_bottom_left_gt_by_gear_latest(df_in: pd.DataFrame, country: str) -> go.F
         return empty_fig(f"{country} {y}: GT by gear (no data)")
 
     agg = d.groupby(GEAR, as_index=False)[VAL].sum().sort_values(VAL, ascending=False).head(15)
-    fig = px.bar(agg, x=GEAR, y=VAL, title=f"{country} ({y}): GT by gear (top 15)")
+    fig = px.bar(agg, x=GEAR, y=VAL, title=f"{country} ({y}): Gross tonage per fishing gear ")
     fig.update_layout(
         xaxis_tickangle=-45,
         hovermode="x unified",
+        xaxis_title="Gear type",
+        yaxis_title="Gross Tonage",
         margin=dict(l=50, r=20, t=55, b=60),
         height=300,
     )
@@ -180,10 +171,12 @@ def fig_bottom_right_gt_by_eng_latest(df_in: pd.DataFrame, country: str) -> go.F
         return empty_fig(f"{country} {y}: GT by engine power (no data)")
 
     agg = d.groupby(ENG, as_index=False)[VAL].sum().sort_values(VAL, ascending=False)
-    fig = px.bar(agg, x=ENG, y=VAL, title=f"{country} ({y}): GT by engine power")
+    fig = px.bar(agg, x=ENG, y=VAL, title=f"{country} ({y}): Gross Tonage by engine power")
     fig.update_layout(
         xaxis_tickangle=-45,
         hovermode="x unified",
+        xaxis_title="Engine Power",
+        yaxis_title="Gross Tonage",
         margin=dict(l=50, r=20, t=55, b=60),
         height=300,
     )
