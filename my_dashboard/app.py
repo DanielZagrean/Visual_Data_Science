@@ -87,7 +87,7 @@ def fig_top_left(df_in: pd.DataFrame, selected_country: str) -> go.Figure:
 
     fig.update_layout(
         title="Percentual Change of Grosstonage by Country 1990 - 2024",
-        xaxis_title="Country",
+        xaxis_title="Country (click to select)",
         yaxis_title="% change",
         hovermode="x",
         margin=dict(l=40, r=20, t=60, b=70),
@@ -188,9 +188,9 @@ def fig_bottom_right_gt_by_eng_latest(df_in: pd.DataFrame, country: str) -> go.F
 # ----------------------------
 # Layout: 2 x 2, all same size, top-left clickable
 # ----------------------------
-st.title(" European Fishing Fleet Dashboard")
+st.markdown("### European Fishing Fleet Dashboard")
 
-COMMON_H = 380  # all four same height
+COMMON_H = 320  # all four same height
 
 # Build figures with same height
 fig_tl = fig_top_left(df, st.session_state.selected_country)
@@ -208,8 +208,8 @@ fig_br = fig_bottom_right_gt_by_eng_latest(df, country)
 fig_br.update_layout(height=COMMON_H)
 
 # 2x2 grid
-c1, c2 = st.columns(2, gap="large")
-c3, c4 = st.columns(2, gap="large")
+c1, c2 = st.columns(2, gap="small")
+c3, c4 = st.columns(2, gap="small")
 
 with c1:
     # TOP-LEFT: ONLY CLICKABLE CHART (no st.plotly_chart here)
