@@ -88,7 +88,7 @@ def fig_top_left(df_in: pd.DataFrame, selected_country: str) -> go.Figure:
     fig.update_layout(
         title="% Change of Grosstonage by Country 1990 - 2024, click to select a country",
         xaxis_title="Country",
-        yaxis_title="% change",
+        yaxis_title="% Change",
         hovermode="x",
         margin=dict(l=40, r=20, t=60, b=70),
     )
